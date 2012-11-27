@@ -22,7 +22,7 @@ Method:
 
 The showWheel creates a matrix that first does in order:
 
-- The rotation around the center of the original image.
 - The scaling according to the scale factor. 
+- The rotation around the center of the scaled image.
 - The translation to get the scaled image in the right position.
   
