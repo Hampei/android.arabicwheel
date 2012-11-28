@@ -91,21 +91,28 @@ public class MainActivity extends Activity {
     private class MyOnTouchListener implements OnTouchListener {
         private double previousAngle=0.0, currentAngle=0.0;
         private long previousEventTime=0, currentEventTime=0;
+        private int lastPointerCount = 0;
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+        	detector.onTouchEvent(event);
+        	if (event.getAction() == MotionEvent.ACTION_MOVE && event.getPointerCount() != lastPointerCount) {
+        		event.setAction(MotionEvent.ACTION_DOWN);
+        		lastPointerCount = event.getPointerCount();
+        	}
+
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                 	previousEventTime = 0;
-                	currentAngle = getAngle(event.getX(), event.getY());
+                	currentAngle = getAngle(event);
                     allowRotating = false; // stop wheel from spinning.
                     break;
                 case MotionEvent.ACTION_MOVE:
                 	previousEventTime = currentEventTime;
                 	currentEventTime = event.getEventTime();
                 	previousAngle = currentAngle;
-                    currentAngle = getAngle(event.getX(), event.getY());
+                    currentAngle = getAngle(event);
 
-                    rotateWheel((float) (currentAngle - previousAngle));
+                    rotateWheel(currentAngle - previousAngle);
                     break;
                 case MotionEvent.ACTION_UP:
                 	if (previousEventTime != 0)
@@ -113,7 +120,6 @@ public class MainActivity extends Activity {
                 	allowRotating = true;
                     break;
             }
-            detector.onTouchEvent(event);
             return true;
         }
     }
@@ -149,7 +155,7 @@ public class MainActivity extends Activity {
         }
         @Override
         public void run() {
-            if ((Math.abs(sliceCenterForce()) > 0.5) && allowRotating) {
+        	if ((Math.abs(sliceCenterSpeed()) > 0.5) && allowRotating) {
             	long currentTime = SystemClock.uptimeMillis();
             	double deltaS = (double)(currentTime - lastRunTime) / 1000.0;
                 rotateWheel(velocity * deltaS);
@@ -161,7 +167,7 @@ public class MainActivity extends Activity {
                 lastRunTime = currentTime;
                 wheel.postDelayed(this, 14);
             } else {
-            	Log.d(TAG, "current degrees: " + currentDegrees + " - " + Math.abs(sliceCenterForce()) + " - " + allowRotating);
+            	Log.d(TAG, "current degrees: " + currentDegrees + " - " + Math.abs(sliceCenterSpeed()) + " - " + allowRotating);
             }
         }
     }
@@ -185,9 +191,17 @@ public class MainActivity extends Activity {
     /**
      * @return The angle of the unit circle with the image view's center
      */
-    private double getAngle(double xTouch, double yTouch) {
-        double x = xTouch - (wheelWidth / 2d);
-        double y = currentCenterY() - yTouch;
+    private double getAngle(MotionEvent event) {
+    	double x,y;
+    	if (event.getPointerCount() > 2) {
+    		return 0.0;
+    	} else if (event.getPointerCount() == 2) {
+    		x = event.getX(1) - event.getX(0);
+    		y = event.getY(0) - event.getY(1);
+    	} else {
+    		x = event.getX() - (wheelWidth / 2d);
+    		y = currentCenterY() - event.getY();
+    	}
         return Math.toDegrees(Math.atan2(x, y));
     }
     

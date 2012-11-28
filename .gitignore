@@ -1,4 +1,5 @@
 .apt_generated/
 bin
+**/bin
 gen
 
